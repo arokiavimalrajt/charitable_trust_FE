@@ -20,6 +20,31 @@ import card6 from "./Donateimage/card6.png";
 import card7 from "./Donateimage/card7.png";
 import card8 from "./Donateimage/card8.png";
 
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+
+    script.onload = () => {
+      console.log("Razorpay loaded");
+      resolve(true);
+    };
+
+    script.onerror = () => {
+      console.error("Razorpay failed to load");
+      resolve(false);
+    };
+
+    document.body.appendChild(script);
+  });
+};
+
 const Donate = () => {
   const [order, setOrder] = useState({});
   const [razorpayKey, setRazorpayKey] = useState("");
@@ -60,34 +85,52 @@ const Donate = () => {
 
   const handlePay = async (amount, donationFrequency, selectedText) => {
     try {
-      if (!razorpayKey) {
-        alert("Payment key not loaded. Try again.");
+      // ✅ Load Razorpay only when needed
+      const isLoaded = await loadRazorpay();
+
+      if (!isLoaded) {
+        alert("Payment SDK failed to load. Try again.");
         return;
       }
 
+      if (!razorpayKey) {
+        alert("Payment key not available");
+        return;
+      }
+
+      // ✅ Call backend
       const response = await api.post("/pay", {
         donationType: selectedText,
         donationAmount: amount,
-        donationFrequency: donationFrequency, // ✅ FIXED (was conOMY ❌)
+        donationFrequency: donationFrequency, // ✅ FIXED
       });
 
-      console.log("PAY API RESPONSE:", response.data);
+      console.log("API RESPONSE:", response.data);
 
       if (!response.data?.order?.id) {
-        throw new Error("Invalid order received from backend");
+        throw new Error("Invalid order from backend");
       }
 
       const options = {
         key: razorpayKey,
-        amount: response.data.order.amount, // ✅ NO *100
+        amount: response.data.order.amount, // ✅ DO NOT multiply again
         currency: "INR",
         name: "Helping Hands",
         description: "Donation Transaction",
         order_id: response.data.order.id,
 
-        handler: function (response) {
-          console.log("Payment Success:", response);
-          alert("Payment Successful!");
+        handler: function (res) {
+          console.log("Payment Success:", res);
+
+          alert("Payment Successful 🎉");
+
+          // 👉 OPTIONAL: verify payment here
+        },
+
+        modal: {
+          ondismiss: function () {
+            console.log("Payment popup closed");
+          },
         },
 
         prefill: {
@@ -105,9 +148,9 @@ const Donate = () => {
       rzp.open();
     } catch (error) {
       console.error("FULL ERROR:", error.response?.data || error.message);
+
       setErrorMessage(
-        error.response?.data?.message ||
-          "There was an error processing the payment.",
+        error.response?.data?.message || "Payment failed. Please try again.",
       );
     }
   };
