@@ -1,8 +1,24 @@
 {
   "name": "helpinghands",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "keywords": [
+    "trust",
+    "org"
+  ],
+  "homepage": "https://github.com/arokiavimalrajt/charitable_trust_FE#readme",
+  "bugs": {
+    "url": "https://github.com/arokiavimalrajt/charitable_trust_FE/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arokiavimalrajt/charitable_trust_FE.git"
+  },
+  "license": "ISC",
+  "author": "Arokia Vimal Raj T",
   "type": "module",
+  "main": "index.html",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
