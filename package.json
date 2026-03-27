@@ -20,7 +20,7 @@
   "type": "module",
   "main": "index.html",
   "scripts": {
-    "dev": "vite",
+    "dev": "npx vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
