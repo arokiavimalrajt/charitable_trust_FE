@@ -32,7 +32,7 @@ const Donate = () => {
     window.scrollTo(0, 0);
     AOS.init({
       duration: 2000, // Animation duration in ms
-      once: false,     // Whether animation should happen only once
+      once: false, // Whether animation should happen only once
     });
     // Fetch Razorpay Key from the backend
     const fetchRazorpayKey = async () => {
@@ -44,13 +44,13 @@ const Donate = () => {
         } else {
           console.error(
             "Invalid key data received from /piKey:",
-            response.data
+            response.data,
           );
           setErrorMessage("An error occurred while fetching the payment key.");
         }
       } catch (error) {
         setErrorMessage(
-          "Failed to fetch Razorpay key. Please try again later."
+          "Failed to fetch Razorpay key. Please try again later.",
         );
       }
     };
@@ -60,55 +60,60 @@ const Donate = () => {
 
   const handlePay = async (amount, donationFrequency, selectedText) => {
     try {
-      // console.log("Pay clicked");
-      // console.log("check",amount,selectedText,donationFrequency);
+      if (!razorpayKey) {
+        alert("Payment key not loaded. Try again.");
+        return;
+      }
 
       const response = await api.post("/pay", {
-        donationType: selectedText, // Use the selected donation type text
+        donationType: selectedText,
         donationAmount: amount,
-        conOMY: donationFrequency, // Use the selected frequency
+        donationFrequency: donationFrequency, // ✅ FIXED (was conOMY ❌)
       });
 
-      if (response.data.order) {
-        setOrder(response.data.order);
-       
+      console.log("PAY API RESPONSE:", response.data);
 
-        // Initialize Razorpay only after getting a valid order and key
-        const options = {
-          key: razorpayKey,
-          amount: response.data.order.amount * 100,
-          currency: "INR",
-          name: "Helping Hands",
-          description: "Donation Transaction",
-          order_id: response.data.order.id,
-          callback_url: "https://helpinghandscharitabletrustngo.org/Donate",
-          prefill: {
-            name: "",
-            email: "",
-            contact: "",
-          },
-          theme: {
-            color: "#0699FF",
-          },
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-      } else {
-        console.error("Invalid order data received:", response.data);
-        setErrorMessage("An error occurred while creating the payment order.");
+      if (!response.data?.order?.id) {
+        throw new Error("Invalid order received from backend");
       }
+
+      const options = {
+        key: razorpayKey,
+        amount: response.data.order.amount, // ✅ NO *100
+        currency: "INR",
+        name: "Helping Hands",
+        description: "Donation Transaction",
+        order_id: response.data.order.id,
+
+        handler: function (response) {
+          console.log("Payment Success:", response);
+          alert("Payment Successful!");
+        },
+
+        prefill: {
+          name: "",
+          email: "",
+          contact: "",
+        },
+
+        theme: {
+          color: "#0699FF",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (error) {
-      console.error("There was an error processing the payment!", error);
+      console.error("FULL ERROR:", error.response?.data || error.message);
       setErrorMessage(
-        "There was an error processing the payment. Please try again."
+        error.response?.data?.message ||
+          "There was an error processing the payment.",
       );
     }
   };
 
   // Function to handle image click
   const handleImageClick = (imageUrl, text) => {
-    
     setSelectedImage(imageUrl); // Set the selected image dynamically
     setSelectedText(text); // Set the selected donation type text
     setShowPopup(true); // Show the popup
@@ -157,12 +162,13 @@ const Donate = () => {
           {/* <button className="donate-btn" onClick={() => handlePay(25000, 'ONCE')} disabled={!razorpayKey}>Donate Now</button> */}
           {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
-        <h1 className="selectfield" data-aos="zoom-out">Select the particular field to donate to</h1>
+        <h1 className="selectfield" data-aos="zoom-out">
+          Select the particular field to donate to
+        </h1>
         <div className="cardgrid">
           <div className="card-grid">
             {cardData.map((card) => (
               <Card
-                
                 key={card.id}
                 imageUrl={card.imageUrl}
                 text={card.text}
